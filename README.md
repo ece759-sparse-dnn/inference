@@ -14,3 +14,6 @@ https://graphchallenge.mit.edu/challenges/
 module purge
 module load gnu15/15.2.0 nvidia/cuda/13.0.0
 ```
+
+## CMake Usage / Workflow
+*TODO*
