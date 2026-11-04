@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.24...4.4)
 
 project(sdnn 
-    VERSION 0.1.0 
-    LANGUAGES CXX)
+  VERSION 0.1.0 
+  LANGUAGES CXX)
 
 #------------------------------------------------------------------------------#
 #                                   Options
@@ -11,8 +11,8 @@ project(sdnn
 option(SDNN_ENABLE_CUDA "Build the CUDA backend" OFF)
 
 if (SDNN_ENABLE_CUDA)
-    enable_language(CUDA)
-    find_package(CUDAToolKit REQUIRED)
+  enable_language(CUDA)
+  find_package(CUDAToolKit REQUIRED)
 endif()
 
 #------------------------------------------------------------------------------#
@@ -34,9 +34,9 @@ add_subdirectory(apps)
 #------------------------------------------------------------------------------#
 
 if(PROJECT_IS_TOP_LEVEL)
-    include(CTest)
+  include(CTest)
 endif()
 
-if (PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
-    add_subdirectory(tests)
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
+  add_subdirectory(tests)
 endif()
