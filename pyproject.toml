@@ -1,0 +1,20 @@
+[project]
+name = "inference"
+version = "0.1.0"
+description = "IEEE HPEC Sparse Deep Neural Network Challenge"
+readme = "README.md"
+authors = [
+    { name = "Connor Simms", email = "connorvsimms@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+inference = "inference:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = []
