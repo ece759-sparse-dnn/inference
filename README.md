@@ -27,7 +27,7 @@ Fetching the 1024 Neuron data (recommended):
 ```bash
 uv run scripts/get_data.py data/
 ```
-Fetching more than one dataset:
+Fetching datasets for specific size:
 ```bash
-uv run scripts/get_data.py data/ 1024 4096
+uv run scripts/get_data.py data/ 4096
 ```
