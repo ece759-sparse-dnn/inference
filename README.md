@@ -15,5 +15,19 @@ module purge
 module load gnu15/15.2.0 nvidia/cuda/13.0.0
 ```
 
-## CMake Usage / Workflow
-*TODO*
+## Downloading Datasets
+> [!WARNING]
+> The data sets for 4096 Neurons onwards are quite large.
+
+Info:
+```bash
+uv run scripts/get_data.py --help
+```
+Fetching the 1024 Neuron data (recommended):
+```bash
+uv run scripts/get_data.py data/
+```
+Fetching more than one dataset:
+```bash
+uv run scripts/get_data.py data/ 1024 4096
+```
