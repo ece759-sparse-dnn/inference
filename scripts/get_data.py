@@ -10,7 +10,7 @@
     - truth categories
 Usage:
     uv run scripts/get_data.py data/            # 1024 neurons - default
-    uv run scripts/get_data.py data/ 1024 4096  # specific size(s)
+    uv run scripts/get_data.py data/ 4096       # specific size
 """
 
 import argparse
@@ -91,22 +91,22 @@ def main() -> int:
         "sizes",
         type=int,
         nargs="*",
-        default=[1024],
+        default=1024,
         choices=SIZES,
         help="neurons per layer (default: 1024)",
     )
     args = parser.parse_args()
 
-    if 65536 in args.sizes:
-        print("Note: the 65536 network is ~16 GB compressed and much larger unpacked.")
+    if args.sizes > 1024:
+        print(f"Note: the {args.sizes} network is large.")
 
     args.out.mkdir(parents=True, exist_ok=True)
     try:
-        for n in args.sizes:
-            print(f"Neurons {n}:")
-            get_categories(n, args.out)
-            get_images(n, args.out)
-            get_layers(n, args.out)
+        size = args.sizes
+        print(f"Neurons {size}:")
+        get_categories(size, args.out)
+        get_images(size, args.out)
+        get_layers(size, args.out)
     except (requests.RequestException, OSError, tarfile.TarError) as e:
         print(f"Download failed: {e}", file=sys.stderr)
         return 1
