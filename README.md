@@ -8,6 +8,7 @@ https://graphchallenge.mit.edu/challenges/
 - CMake (Minimum 3.24)
 - CUDA (13.0.0)
 - Python (3.12)
+- UV (0.13)
 
 ## Slurm Module Setup
 ```bash

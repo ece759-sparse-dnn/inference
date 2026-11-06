@@ -1,20 +1,22 @@
 [project]
-name = "inference"
+name = "sdnn-tools"
 version = "0.1.0"
-description = "IEEE HPEC Sparse Deep Neural Network Challenge"
+description = "Add your description here"
 readme = "README.md"
 authors = [
     { name = "Connor Simms", email = "connorvsimms@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "numpy>=2.5.4",
+    "pandas>=3.1.1",
+    "requests>=2.34.2",
+    "scipy>=1.18.1",
+]
 
 [project.scripts]
-inference = "inference:main"
+sdnn-tools = "sdnn_tools:main"
 
 [build-system]
 requires = ["uv_build>=0.13.1,<0.14.0"]
 build-backend = "uv_build"
-
-[dependency-groups]
-dev = []
