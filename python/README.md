@@ -2,6 +2,16 @@
 
 ## Dataset Management
 
+From the project root, run
+```shell
+uv run --project python sdnn-tools -h
+```
+or
+```shell
+uv run sdnn-tools -h
+```
+from the `python/` subdirectory for information about using `sdnn-tools`.
+
 The data root directory can be specified with environment variable `$SDNN_DATA_DIR`.
 
 Otherwise, it is `inference/data`.
