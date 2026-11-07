@@ -1,3 +1,7 @@
-.envrc
 .direnv/
+.venv/
 build/
+data/
+
+.envrc
+CMakeUserPresets.json

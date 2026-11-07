@@ -10,10 +10,13 @@ https://graphchallenge.mit.edu/challenges/
 - Python (3.12)
 - UV (0.13)
 
-## Slurm Module Setup
+## Building
+
+### Debug
 ```bash
-module purge
-module load gnu15/15.2.0 nvidia/cuda/13.0.0
+cmake --preset debug
+cmake --build --preset debug
+ctest --preset debug
 ```
 
 ## Downloading Datasets
@@ -22,13 +25,11 @@ module load gnu15/15.2.0 nvidia/cuda/13.0.0
 
 Info:
 ```bash
-uv run scripts/get_data.py --help
+uv run --project python sdnn-tools -h
 ```
-Fetching the 1024 Neuron data (recommended):
+
+## Slurm Module Setup
 ```bash
-uv run scripts/get_data.py data/
-```
-Fetching datasets for specific size:
-```bash
-uv run scripts/get_data.py data/ 4096
+module purge
+module load gnu15/15.2.0 nvidia/cuda/13.0.0
 ```

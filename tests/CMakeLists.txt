@@ -6,10 +6,10 @@ FetchContent_Declare(googletest
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# TODO: Add test executable
-# add_executable(EXEC_NAME ...)
-# target_link_libraries(EXEC_NAME ...)
+add_executable(sdnn_tests
+  test_version.cpp
+)
+target_link_libraries(sdnn_tests PRIVATE sdnn GTest::gtest_main)
 
 include(GoogleTest)
-# TODO: 
-# gtest_discover_tests(EXEC_NAME)
+gtest_discover_tests(sdnn_tests)

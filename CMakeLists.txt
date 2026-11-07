@@ -12,7 +12,7 @@ option(SDNN_ENABLE_CUDA "Build the CUDA backend" OFF)
 
 if (SDNN_ENABLE_CUDA)
   enable_language(CUDA)
-  find_package(CUDAToolKit REQUIRED)
+  find_package(CUDAToolkit REQUIRED)
 endif()
 
 #------------------------------------------------------------------------------#
