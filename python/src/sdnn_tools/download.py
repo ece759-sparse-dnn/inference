@@ -18,9 +18,9 @@ def layers_url(*, size: int) -> str:
     return f"{BASE_URL}/dnn/neuron{size}.tar.gz"
 
 
-def categories_url(*, size: int, layers: int) -> str:
+def categories_url(*, size: int, depth: int) -> str:
     """Download URL for categories."""
-    return f"{BASE_URL}/dnn/neuron{size}-l{layers}-categories.tsv"
+    return f"{BASE_URL}/dnn/neuron{size}-l{depth}-categories.tsv"
 
 
 def images_url(*, size: int) -> str:
@@ -29,14 +29,14 @@ def images_url(*, size: int) -> str:
 
 
 def fetch(url: str) -> requests.Response:
-    """Fetches response for URL with timeout."""
+    """Fetch response for a URL."""
     response = requests.get(url, stream=True, timeout=TIMEOUT)
     response.raise_for_status()
     return response
 
 
 def get_layers(*, size: int) -> None:
-    """Downloads layers for a particular size."""
+    """Download layers for a particular size."""
     out = layout.raw_dir()
     done = layout.raw_layers_marker(size)
     if done.exists():
@@ -53,17 +53,17 @@ def get_layers(*, size: int) -> None:
 
 
 def get_categories(*, size: int) -> None:
-    """Downloads all categories for a particular size."""
-    for layers in constants.LAYERS:
-        dest = layout.raw_categories_tsv(size, layers)
+    """Download all categories for a particular size."""
+    for depth in constants.DEPTHS:
+        dest = layout.raw_categories_tsv(size, depth)
         if dest.exists():
-            print(f"  categories {size}-{layers}: already present")
+            print(f"  categories {size}-{depth}: already present")
             continue
-        print(f"  categories {size}-{layers}: downloading...")
+        print(f"  categories {size}-{depth}: downloading...")
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(".part")
         with (
-            fetch(categories_url(size=size, layers=layers)) as response,
+            fetch(categories_url(size=size, depth=depth)) as response,
             open(tmp, "wb") as dst,
         ):
             shutil.copyfileobj(response.raw, dst)
