@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from . import constants, convert, download, layout
+from . import constants, convert, download, layout, reference
 
 
 def main() -> None:
@@ -49,6 +49,27 @@ def main() -> None:
         "--force", action="store_true", help="Re-convert even if already present"
     )
     convert_parser.set_defaults(func=convert.convert)
+
+    verify_parser = subparsers.add_parser(
+        "verify", help="Run the reference inference and compare against truth"
+    )
+    verify_parser.add_argument(
+        "-s",
+        type=int,
+        nargs="+",
+        help="Size(s) of dataset (Neurons) to verify",
+        default=[1024],
+        choices=constants.SIZES,
+        metavar="SIZE",
+    )
+    verify_parser.add_argument(
+        "--layers",
+        type=int,
+        default=120,
+        choices=constants.DEPTHS,
+        help="Network depth to run (default: 120)",
+    )
+    verify_parser.set_defaults(func=reference.verify)
 
     args: argparse.Namespace = parser.parse_args()
     layout.set_data_root(args.data_dir)
