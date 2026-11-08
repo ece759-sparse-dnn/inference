@@ -45,18 +45,25 @@ def layer_to_csr(
     df: pd.DataFrame, size: int, nnz_per_row: int
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Convert a layer's DataFrame to CSR format."""
+    orig = df.shape[0]
+    df = df.drop_duplicates(subset=["src", "dst"])
+    if df.shape[0] != orig:
+        raise ValueError(f"layer for size {size} has duplicate rows")
+
     coo = sp.sparse.coo_array(
         (df["val"].to_numpy(), (df["src"].to_numpy() - 1, df["dst"].to_numpy() - 1)),
         shape=(size, size),
     )
-    assert np.all(coo.count_nonzero(axis=1) == nnz_per_row)
     csr = coo.tocsr()
     csr.sort_indices()
+    diff = np.diff(csr.indptr)
+    if not np.all(diff == diff[0]):
+        raise ValueError(f"layer for size {size} has inconsistent nnz per row")
 
     return (
-        csr.indptr.astype(np.int32),
-        csr.indices.astype(np.int32),
-        csr.data.astype(np.float32),
+        csr.indptr.astype(np.int32, casting="same_value"),
+        csr.indices.astype(np.int32, casting="same_value"),
+        csr.data.astype(np.float32, casting="same_value"),
     )
 
 
@@ -103,9 +110,15 @@ def convert_images(size: int) -> int:
     csr.sort_indices()
 
     dest = layout.bin_network_dir(size)
-    np.save(dest / "images_indptr.npy", csr.indptr.astype(np.int64))
-    np.save(dest / "images_indices.npy", csr.indices.astype(np.int32))
-    np.save(dest / "images_values.npy", csr.data.astype(np.float32))
+    np.save(
+        dest / "images_indptr.npy", csr.indptr.astype(np.int32, casting="same_value")
+    )
+    np.save(
+        dest / "images_indices.npy", csr.indices.astype(np.int32, casting="same_value")
+    )
+    np.save(
+        dest / "images_values.npy", csr.data.astype(np.float32, casting="same_value")
+    )
     print(f"  images {size}: {num_images} images, {csr.nnz} nonzeros")
     return num_images
 
@@ -151,7 +164,6 @@ def convert_dataset(
 
     meta = {
         "version": constants.BIN_VERSION,
-        "format": "csr",
         "neurons": size,
         "layers": num_layers,
         "nnz_per_layer": size * nnz_per_row,
