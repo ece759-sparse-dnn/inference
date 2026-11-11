@@ -57,7 +57,6 @@ For building the C++ applications,
 ```bash
 cmake --preset debug
 cmake --build --preset debug
-ctest --preset debug
 ```
 
 To run the serial inference backend,
