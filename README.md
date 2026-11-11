@@ -58,8 +58,16 @@ For building the C++ applications,
 cmake --preset debug
 cmake --build --preset debug
 ctest --preset debug
+```
 
+To run the serial inference backend,
+```bash
 ./build/debug/apps/sdnn_run --backend serial --size 1024 --layers 120
+```
+
+To run C++ testing,
+```bash
+ctest --preset debug
 ```
 
 ## Datasets
