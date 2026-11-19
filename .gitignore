@@ -2,6 +2,7 @@
 .venv/
 build/
 data/
+__pycache__/
 
 .envrc
 CMakeUserPresets.json
