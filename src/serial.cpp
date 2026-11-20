@@ -5,7 +5,7 @@
 namespace sdnn {
 
 std::vector<std::int32_t> infer_serial(const Dataset &, int) {
-  throw std::logic_error("serial backend not implemented");
+  throw sdnn::not_implemented("serial backend not implemented");
 }
 
 } // namespace sdnn
