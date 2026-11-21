@@ -37,8 +37,40 @@ void apply_activations(const std::vector<float>& left_layer,
 }
 }
 
-std::vector<std::int32_t> infer_serial(const Dataset &d, int) {
+std::vector<std::int32_t> infer_serial(const Dataset &d, int layers) {
+	std::vector<std::int32_t> active_image_idxs;
 
+	for(std::size_t image = 0; image < d.images.rows; ++image){
+		std::int32_t image_start = d.images.indptr[image];
+		std::int32_t image_end = d.images.indptr[image + 1];
+
+		// First layer is the image itself
+		std::vector<float> left_layer(d.neurons, 0.0f);
+		for(auto i = image_start; i < image_end; ++i){
+			left_layer[d.images.indices[i]] = d.images.values[i];
+		}
+
+		for(int i = 0; i < layers-1; ++i){
+			std::vector<float> right_layer(d.neurons, 0.0f);
+			apply_activations(left_layer, right_layer, d, i);
+			std::swap(left_layer, right_layer);
+		}
+
+		// Now, left_layer points to the last layer of the neural net
+		bool nonzero = false;
+		for(std::int32_t i = 0; i < d.neurons; ++i){
+			if(left_layer[i] != 0.0f){
+				nonzero = true;
+				break;
+			}
+		}
+
+		if(nonzero){
+			active_image_idxs.push_back(image);
+		}
+	}
+
+	return active_image_idxs;
 }
 
 } // namespace sdnn
