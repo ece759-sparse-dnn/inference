@@ -1,8 +1,10 @@
 .direnv/
 .venv/
+.cache/
 build/
 data/
 __pycache__/
 
 .envrc
 CMakeUserPresets.json
+compile_commands.json
