@@ -72,5 +72,4 @@ std::vector<std::int32_t> infer_serial(const Dataset &d, int layers) {
 
 	return active_image_idxs;
 }
-
 } // namespace sdnn

@@ -6,12 +6,17 @@
 
 #include <cstdint>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
 #include "sdnn/dataset.hpp"
 
 namespace sdnn {
+
+struct not_implemented : std::logic_error {
+  using std::logic_error::logic_error;
+};
 
 using InferFn = std::vector<std::int32_t> (*)(const Dataset &, int);
 

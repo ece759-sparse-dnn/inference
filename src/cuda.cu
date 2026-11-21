@@ -5,7 +5,7 @@
 namespace sdnn {
 
 std::vector<std::int32_t> infer_cuda(const Dataset &, int) {
-  throw std::logic_error("cuda backend not implemented");
+  throw sdnn::not_implemented("cuda backend not implemented");
 }
 
 } // namespace sdnn
