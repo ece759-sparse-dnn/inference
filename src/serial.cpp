@@ -50,7 +50,7 @@ std::vector<std::int32_t> infer_serial(const Dataset &d, int layers) {
 			left_layer[d.images.indices[i]] = d.images.values[i];
 		}
 
-		for(int i = 0; i < layers-1; ++i){
+		for(int i = 0; i < layers; ++i){
 			std::vector<float> right_layer(d.neurons, 0.0f);
 			apply_activations(left_layer, right_layer, d, i);
 			std::swap(left_layer, right_layer);
