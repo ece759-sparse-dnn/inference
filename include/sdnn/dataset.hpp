@@ -19,6 +19,14 @@ struct Csr {
   std::vector<float> values;
 };
 
+struct CsrView {
+  std::int32_t rows = 0;
+  std::int32_t cols = 0;
+  std::span<const std::int32_t> indptr;
+  std::span<const std::int32_t> indices;
+  std::span<const float> values;
+};
+
 struct Dataset {
   std::int32_t neurons = 0;
   std::int32_t num_layers = 0;
@@ -45,6 +53,16 @@ struct Dataset {
     const std::size_t n = static_cast<std::size_t>(nnz_per_layer);
     return std::span(weights_values).subspan(i * n, n);
   }
+
+  auto layer(int i) const -> CsrView {
+    return {
+        .rows = neurons,
+        .cols = neurons,
+        .indptr = layer_indptr(i),
+        .indices = layer_indices(i),
+        .values = layer_values(i),
+    };
+  };
 };
 
 Dataset load_dataset(const std::filesystem::path &dir);
