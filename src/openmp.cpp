@@ -5,7 +5,8 @@
 namespace sdnn {
 
 namespace{
-void apply_activations(const std::vector<float>& left_layer,
+// Returns true if any neuron in right_layer is nonzero after the bias and clamp
+bool apply_activations(const std::vector<float>& left_layer,
 						     std::vector<float>& right_layer,
 					   const Dataset& d,
 					   int left_layer_num){
@@ -29,10 +30,13 @@ void apply_activations(const std::vector<float>& left_layer,
 		}
 	}
 
+	bool alive = false;
 	for(std::int32_t i = 0; i < d.neurons; ++i){
 		if(right_layer[i] > 0) right_layer[i] += d.bias;
 		right_layer[i] = std::min(std::max(0.0f, right_layer[i]), d.ymax);
+		alive |= (right_layer[i] > 0.0f);
 	}
+	return alive;
 }
 }
 
@@ -58,11 +62,11 @@ std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 			}
 
 			for(int i = 0; i < layers; ++i){
-				apply_activations(left_layer, right_layer, d, i);
+				bool alive = apply_activations(left_layer, right_layer, d, i);
 				std::swap(left_layer, right_layer);
+				if(!alive) break;
 			}
 
-			// Now, left_layer points to the last layer of the neural net
 			bool nonzero = false;
 			for(std::int32_t i = 0; i < d.neurons; ++i){
 				if(left_layer[i] != 0.0f){
