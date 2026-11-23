@@ -47,12 +47,13 @@ std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 
 		// First layer is the image itself
 		std::vector<float> left_layer(d.neurons, 0.0f);
+		std::vector<float> right_layer(d.neurons, 0.0f);
+
 		for(auto i = image_start; i < image_end; ++i){
 			left_layer[d.images.indices[i]] = d.images.values[i];
 		}
 
 		for(int i = 0; i < layers; ++i){
-			std::vector<float> right_layer(d.neurons, 0.0f);
 			apply_activations(left_layer, right_layer, d, i);
 			std::swap(left_layer, right_layer);
 		}
@@ -72,7 +73,7 @@ std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 	for(std::size_t image = 0; image < d.images.rows; ++image){
 		if(is_image_active[image]) active_image_idxs.push_back(image);
 	}
-	
+
 	return active_image_idxs;
 }
 
