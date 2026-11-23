@@ -1,39 +1,108 @@
 #include <gtest/gtest.h>
 
-#include <sdnn/dataset.hpp>
+#include <sdnn/csr.hpp>
 #include <sdnn/ell.hpp>
 
-TEST(Ell, CsrToEll) {
-  sdnn::Csr csr{
+#include <stdexcept>
+#include <vector>
+
+namespace {
+
+sdnn::Csr tiny_csr() {
+  return {
       .rows = 3,
       .cols = 3,
       .indptr = {0, 2, 4, 6},
       .indices = {0, 1, 1, 2, 0, 2},
       .values = {1, 2, 3, 4, 5, 6},
   };
+}
 
-  sdnn::CsrView csr_view{
-      .rows = 3,
-      .cols = 3,
+sdnn::CsrView view_of(const sdnn::Csr &csr) {
+  return {
+      .rows = csr.rows,
+      .cols = csr.cols,
       .indptr = csr.indptr,
       .indices = csr.indices,
       .values = csr.values,
   };
+}
 
-  sdnn::Ell expected_ell{
-      .nnz_per_col = 2,
-      .indices = {0, 0, 1, 2, 1, 2},
-      .values = {1, 2, 4, 5, 3, 6},
+} // namespace
+
+TEST(Ell, FromTranspose) {
+  const auto csr = tiny_csr();
+  const auto ell = sdnn::ell::from_transpose(view_of(csr));
+
+  EXPECT_EQ(ell.rows, 3);
+  EXPECT_EQ(ell.width, 2);
+  EXPECT_EQ(ell.indices, (std::vector<std::int32_t>{0, 0, 1, 2, 1, 2}));
+  EXPECT_EQ(ell.values, (std::vector<float>{1, 2, 4, 5, 3, 6}));
+}
+
+TEST(Ell, EmplaceOverwritesOutput) {
+  const auto csr = tiny_csr();
+  std::vector<std::int32_t> idx(6, -1);
+  std::vector<float> val(6, -1.0f);
+
+  sdnn::ell::emplace_from_transpose(view_of(csr), idx, val);
+
+  EXPECT_EQ(idx, (std::vector<std::int32_t>{0, 0, 1, 2, 1, 2}));
+  EXPECT_EQ(val, (std::vector<float>{1, 2, 4, 5, 3, 6}));
+}
+
+TEST(Ell, IrregularColumnsThrow) {
+  sdnn::Csr csr = tiny_csr();
+  csr.indices = {0, 1, 0, 2, 0, 2};
+  EXPECT_THROW(sdnn::ell::from_transpose(view_of(csr)), std::invalid_argument);
+}
+
+TEST(Ell, OutOfRangeColumnThrows) {
+  sdnn::Csr csr = tiny_csr();
+  csr.indices[0] = -1;
+  EXPECT_THROW(sdnn::ell::from_transpose(view_of(csr)), std::invalid_argument);
+}
+
+TEST(Ell, WrongOutputSizeThrows) {
+  const auto csr = tiny_csr();
+  std::vector<std::int32_t> idx(5);
+  std::vector<float> val(5);
+  EXPECT_THROW(sdnn::ell::emplace_from_transpose(view_of(csr), idx, val),
+               std::invalid_argument);
+}
+
+TEST(Ell, LayersFromTranspose) {
+  const auto csr = tiny_csr();
+  sdnn::CsrLayers layers{
+      .neurons = 3,
+      .num_layers = 2,
+      .nnz_per_layer = 6,
   };
+  for (int l = 0; l < 2; ++l) {
+    layers.indptr.insert(layers.indptr.end(), csr.indptr.begin(),
+                         csr.indptr.end());
+    layers.indices.insert(layers.indices.end(), csr.indices.begin(),
+                          csr.indices.end());
+    for (float v : csr.values) {
+      layers.values.push_back(v + 10.0f * l);
+    }
+  }
 
-  sdnn::Ell got_ell{
-      .nnz_per_col = 2,
-      .indices = std::vector<std::int32_t>(6, 0),
-      .values = std::vector<float>(6, 0),
-  };
+  const auto ell = sdnn::ell::from_transpose(layers, 2);
 
-  sdnn::csr_to_ell(csr_view, 2, got_ell.indices, got_ell.values);
+  EXPECT_EQ(ell.neurons, 3);
+  EXPECT_EQ(ell.width, 2);
+  EXPECT_EQ(ell.num_layers, 2);
+  EXPECT_EQ(ell.indices,
+            (std::vector<std::int32_t>{0, 0, 1, 2, 1, 2, 0, 0, 1, 2, 1, 2}));
+  EXPECT_EQ(ell.values,
+            (std::vector<float>{1, 2, 4, 5, 3, 6, 11, 12, 14, 15, 13, 16}));
 
-  EXPECT_EQ(expected_ell.values, got_ell.values);
-  EXPECT_EQ(expected_ell.indices, got_ell.indices);
+  const auto second = ell.layer(1);
+  EXPECT_EQ(second.values[0], 11.0f);
+}
+
+TEST(Ell, TooManyLayersThrows) {
+  sdnn::CsrLayers layers{.neurons = 3, .num_layers = 1, .nnz_per_layer = 6};
+  EXPECT_THROW(sdnn::ell::from_transpose(layers, 2), std::invalid_argument);
 }

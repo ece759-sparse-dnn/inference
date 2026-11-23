@@ -3,6 +3,7 @@ add_library(sdnn)
 target_sources(sdnn
   PRIVATE
     backends.cpp
+    csr.cpp
     dataset.cpp
     npy.cpp
     openmp.cpp
@@ -14,6 +15,7 @@ target_sources(sdnn
     BASE_DIRS ${PROJECT_SOURCE_DIR}/include
     FILES
       ${PROJECT_SOURCE_DIR}/include/sdnn/backend.hpp
+      ${PROJECT_SOURCE_DIR}/include/sdnn/csr.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/dataset.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/npy.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/version.hpp
