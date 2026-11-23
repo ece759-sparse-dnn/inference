@@ -1,5 +1,5 @@
 #include <stdexcept>
-
+#include <algorithm>
 #include "sdnn/backend.hpp"
 
 namespace sdnn {
@@ -39,35 +39,40 @@ void apply_activations(const std::vector<float>& left_layer,
 std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 	std::vector<std::int32_t> is_image_active(d.images.rows, 0);
 	std::vector<std::int32_t> active_image_idxs;
-
-	#pragma omp parallel for
-	for(std::size_t image = 0; image < d.images.rows; ++image){
-		std::int32_t image_start = d.images.indptr[image];
-		std::int32_t image_end = d.images.indptr[image + 1];
-
-		// First layer is the image itself
+	#pragma omp parallel
+	{
+	
+		// Per thread activation buffers. Reused by each image allocated to that thread
 		std::vector<float> left_layer(d.neurons, 0.0f);
 		std::vector<float> right_layer(d.neurons, 0.0f);
 
-		for(auto i = image_start; i < image_end; ++i){
-			left_layer[d.images.indices[i]] = d.images.values[i];
-		}
+		#pragma omp for
+		for(std::size_t image = 0; image < d.images.rows; ++image){
+			std::int32_t image_start = d.images.indptr[image];
+			std::int32_t image_end = d.images.indptr[image + 1];
 
-		for(int i = 0; i < layers; ++i){
-			apply_activations(left_layer, right_layer, d, i);
-			std::swap(left_layer, right_layer);
-		}
+			std::fill(left_layer.begin(), left_layer.end(), 0.0f);
 
-		// Now, left_layer points to the last layer of the neural net
-		bool nonzero = false;
-		for(std::int32_t i = 0; i < d.neurons; ++i){
-			if(left_layer[i] != 0.0f){
-				nonzero = true;
-				break;
+			for(auto i = image_start; i < image_end; ++i){
+				left_layer[d.images.indices[i]] = d.images.values[i];
 			}
-		}
 
-		is_image_active[image] = nonzero;
+			for(int i = 0; i < layers; ++i){
+				apply_activations(left_layer, right_layer, d, i);
+				std::swap(left_layer, right_layer);
+			}
+
+			// Now, left_layer points to the last layer of the neural net
+			bool nonzero = false;
+			for(std::int32_t i = 0; i < d.neurons; ++i){
+				if(left_layer[i] != 0.0f){
+					nonzero = true;
+					break;
+				}
+			}
+
+			is_image_active[image] = nonzero;
+		}
 	}
 
 	for(std::size_t image = 0; image < d.images.rows; ++image){
