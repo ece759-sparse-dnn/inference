@@ -8,6 +8,7 @@ target_sources(sdnn
     openmp.cpp
     serial.cpp
     version.cpp
+    ell.cpp
   PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${PROJECT_SOURCE_DIR}/include
@@ -16,6 +17,7 @@ target_sources(sdnn
       ${PROJECT_SOURCE_DIR}/include/sdnn/dataset.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/npy.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/version.hpp
+      ${PROJECT_SOURCE_DIR}/include/sdnn/ell.hpp
 )
 
 target_compile_features(sdnn PUBLIC cxx_std_20)
