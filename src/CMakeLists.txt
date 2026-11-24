@@ -5,6 +5,7 @@ target_sources(sdnn
     backends.cpp
     csr.cpp
     dataset.cpp
+    dense.cpp
     npy.cpp
     openmp.cpp
     serial.cpp
@@ -17,6 +18,7 @@ target_sources(sdnn
       ${PROJECT_SOURCE_DIR}/include/sdnn/backend.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/csr.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/dataset.hpp
+      ${PROJECT_SOURCE_DIR}/include/sdnn/dense.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/npy.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/version.hpp
       ${PROJECT_SOURCE_DIR}/include/sdnn/ell.hpp
@@ -36,6 +38,12 @@ if(SDNN_ENABLE_CUDA)
   target_sources(sdnn
     PRIVATE
       cuda.cu
+      cuda/kernels.cu
+      cuda/check.cuh
+      cuda/device_buffer.cuh
+      cuda/device_ell.cuh
+      cuda/device_views.cuh
+      cuda/kernels.cuh
   )
 
   target_compile_features(sdnn PUBLIC cuda_std_20)
