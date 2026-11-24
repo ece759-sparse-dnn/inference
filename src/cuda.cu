@@ -35,18 +35,6 @@ std::vector<std::int32_t> active_rows(cuda::ActivationsView y) {
   return ids;
 }
 
-// Pack into the unused output buffer so unread source rows cannot be
-// overwritten.
-__global__ void gather_rows(cuda::ActivationsView src, const std::int32_t *ids,
-                            float *dst) {
-  const auto row = static_cast<std::int64_t>(blockIdx.x);
-  const auto original = static_cast<std::int64_t>(ids[row]);
-  for (auto col = static_cast<std::int64_t>(threadIdx.x); col < src.cols;
-       col += blockDim.x) {
-    dst[row * src.cols + col] = src.values[original * src.cols + col];
-  }
-}
-
 std::vector<std::int32_t> infer_cuda_compact(const Dataset &d, int layers,
                                              int after_layer) {
   if (after_layer < 0 || (after_layer > 0 && after_layer >= layers)) {
@@ -78,6 +66,7 @@ std::vector<std::int32_t> infer_cuda_compact(const Dataset &d, int layers,
   const auto blocks =
       (static_cast<unsigned>(neurons) + kBlockSize - 1) / kBlockSize;
   std::vector<std::int32_t> original_ids;
+  cuda::DeviceBuffer<std::int32_t> ids(0);
 
   for (std::size_t l{}; l < num_layers; ++l) {
     if (after_layer > 0 && l == static_cast<std::size_t>(after_layer)) {
@@ -88,9 +77,13 @@ std::vector<std::int32_t> infer_cuda_compact(const Dataset &d, int layers,
       }
       if (original_ids.size() < static_cast<std::size_t>(rows)) {
         rows = static_cast<std::int32_t>(original_ids.size());
-        cuda::DeviceBuffer<std::int32_t> ids(rows);
+        ids = cuda::DeviceBuffer<std::int32_t>(original_ids.size());
         ids.upload(original_ids);
-        gather_rows<<<rows, block>>>(y, ids.data(), yout.data());
+        // Pack into the unused output buffer so unread source rows cannot be
+        // overwritten.
+        cuda::gather_rows_kernel<<<rows, block>>>(
+            y, ids.span(),
+            {.rows = rows, .cols = neurons, .values = yout.span()});
         cuda::check(cudaGetLastError());
         std::swap(yin, yout);
       }

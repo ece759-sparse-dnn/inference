@@ -52,4 +52,20 @@ __global__ auto active_images_kernel(ActivationsView y,
   }
 }
 
+__global__ auto gather_rows_kernel(ActivationsView src,
+                                   ::cuda::std::span<const std::int32_t> ids,
+                                   ActivationsRef dst) -> void {
+  const auto row = static_cast<std::int64_t>(blockIdx.x);
+  if (row >= dst.rows) {
+    return;
+  }
+
+  const auto from = static_cast<std::int64_t>(ids[row]) * src.cols;
+  const auto to = row * dst.cols;
+  for (auto col = static_cast<std::int64_t>(threadIdx.x); col < dst.cols;
+       col += blockDim.x) {
+    dst.values[to + col] = src.values[from + col];
+  }
+}
+
 } // namespace sdnn::cuda
