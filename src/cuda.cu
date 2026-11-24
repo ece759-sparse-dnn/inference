@@ -20,6 +20,7 @@ namespace {
 constexpr unsigned kBlockSize = 256;
 constexpr std::int32_t kMaxGridY = 65535;
 
+<<<<<<< HEAD
 std::vector<std::int32_t> active_rows(cuda::ActivationsView y) {
   cuda::DeviceBuffer<std::int32_t> flags(y.rows);
   cuda::active_images_kernel<<<y.rows, kBlockSize>>>(y, flags.span());
@@ -35,7 +36,8 @@ std::vector<std::int32_t> active_rows(cuda::ActivationsView y) {
   return ids;
 }
 
-// Pack into the unused output buffer so unread source rows cannot be overwritten.
+// Pack into the unused output buffer so unread source rows cannot be
+// overwritten.
 __global__ void gather_rows(cuda::ActivationsView src, const std::int32_t *ids,
                             float *dst) {
   const auto row = static_cast<std::int64_t>(blockIdx.x);
