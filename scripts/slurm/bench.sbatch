@@ -14,7 +14,8 @@
 # Usage, from the repo root (build first with scripts/slurm/build.sh):
 #   sbatch scripts/slurm/bench.sbatch
 #
-# Requires SDNN_DATA_DIR. Optional overrides (export before sbatch):
+# Reads data from SDNN_DATA_DIR (default data/ in the repo; populate it with
+# scripts/slurm/data.sh). Optional overrides (export before sbatch):
 #   SIZE=1024  DEPTHS="120 480"  THREADS="1 2 4 8 16 32 64"  REPS=3
 #   SCHEDULES="static dynamic,64 guided"  RESULTS_DIR=results/myrun
 #   SDNN_BUILD_DIR=build/cuda-euler
@@ -24,7 +25,7 @@ die() { echo "error: $*" >&2; exit 1; }
 section() { printf '\n==== %s ====\n' "$*"; }
 
 cd "${SLURM_SUBMIT_DIR:?submit this with sbatch from the repo root}"
-: "${SDNN_DATA_DIR:?set SDNN_DATA_DIR to the shared dataset directory}"
+export SDNN_DATA_DIR=${SDNN_DATA_DIR:-$PWD/data}
 
 cpus=${SLURM_CPUS_PER_TASK:-$(nproc)}
 size=${SIZE:-1024}
@@ -43,9 +44,17 @@ if [[ -z ${THREADS:-} ]]; then
 fi
 export THREADS REPS="$reps" SDNN_RUN="$bin" SDNN_DATA_DIR
 
-[[ -f $SDNN_DATA_DIR/bin/neuron$size/.done ]] || die "no converted dataset at $SDNN_DATA_DIR/bin/neuron$size"
+[[ -f $SDNN_DATA_DIR/bin/neuron$size/.done ]] || die "no converted dataset at $SDNN_DATA_DIR/bin/neuron$size; run scripts/slurm/data.sh $size on the login node"
 source scripts/slurm/env.sh
 [[ -x $bin && -x $tests ]] || die "$build not built; run scripts/slurm/build.sh first"
+
+built_on=$(cat "$build/build-cpu.txt" 2>/dev/null || true)
+here=$(lscpu | sed -n 's/^Model name: *//p')
+if [[ -z $built_on ]]; then
+  echo "warning: $build has no build-cpu.txt; build it with scripts/slurm/build.sh so -march=native matches the compute nodes" >&2
+elif [[ $built_on != "$here" ]]; then
+  echo "warning: built on '$built_on' but running on '$here'; -march=native code may be slower or crash" >&2
+fi
 mkdir -p "$results"
 
 section "node"
