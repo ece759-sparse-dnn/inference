@@ -12,9 +12,9 @@ inference, with benchmarks.
 | Python reference inference (`sdnn-tools verify`) | working |
 | C++ dataset loader (`sdnn::load_dataset`) | working |
 | Benchmark driver (`sdnn_run`) | working |
-| Serial backend | not implemented |
-| OpenMP backend | not implemented |
-| CUDA backend | not implemented |
+| Serial backend | working |
+| OpenMP backend | working |
+| CUDA backend | working |
 
 ## Dependencies
 
@@ -24,12 +24,6 @@ inference, with benchmarks.
 - CUDA (13.0.0)
 - Python (3.12)
 - UV (0.13)
-
-### Slurm Module Setup
-```bash
-module purge
-module load gnu15/15.2.0 nvidia/cuda/13.0.0
-```
 
 ## Quickstart + Usage
 
@@ -62,6 +56,11 @@ cmake --build --preset debug
 To run the serial inference backend,
 ```bash
 ./build/debug/apps/sdnn_run --backend serial --size 1024 --layers 120
+```
+
+To run the OpenMP inference backend,
+```bash
+./build/debug/apps/sdnn_run --backend openmp --size 1024 --layers 120
 ```
 
 To run C++ testing,
@@ -123,6 +122,103 @@ backend,neurons,layers,images,threads,seconds,edges_per_second,pass
 ```
 
 `OMP_NUM_THREADS` should be set for OpenMP runs.
+
+## Running on Euler (Slurm)
+
+Euler is for building and testing on small datasets (1024 neurons). 
+Larger runs should use CHTC (files are too big for euler). 
+Practically speaking, shared dataset directories aren't an option (max size 1000MB)
+
+Use Slurm. All scripts live in `scripts/slurm/` and are run from the repo root.
+
+### Datasets
+
+From the login node, run
+```bash
+scripts/slurm/data.sh
+```
+
+This installs uv into `~/.local/bin` if it isn't on your `PATH`, then
+runs `sdnn-tools download` and `convert` into `data/` in the repo, where
+`sdnn_run` and the Slurm scripts look by default. Sizes that are already
+converted are skipped. Set `PRUNE_RAW=1` to delete the raw TSVs after
+conversion.
+
+To keep the data elsewhere, export `SDNN_DATA_DIR` (in `~/.zshrc`, or
+`~/.bashrc` for bash).
+
+> [!WARNING]
+> Data counts against your home quota. Converted sizes are roughly 0.5 GB
+> (1024), 2 GB (4096), 9 GB (16384) and 35 GB (65536), and the raw downloads
+> are larger.
+
+### Build
+
+```bash
+scripts/slurm/build.sh
+```
+
+This configures the `cuda-euler` preset on the login node (a few seconds; it
+downloads GoogleTest, and compute nodes may not have internet access), then
+submits `scripts/slurm/build.sbatch` to compile on a compute node. Compiling
+there keeps long builds off the login node and makes `-march=native` target
+the compute nodes' CPU. Extra arguments go to `sbatch`, e.g.
+`scripts/slurm/build.sh -c 16`.
+
+The build job's ID is printed; queue runs behind it so they start only if the
+build succeeds:
+
+```bash
+sbatch --dependency=afterok:<jobid> --gres=gpu:1 scripts/slurm/run.sbatch cuda 1024 120
+```
+
+The build log goes to `sdnn-build-<jobid>.out`. To rebuild after code changes
+without reconfiguring, `sbatch scripts/slurm/build.sbatch`.
+
+### Run one backend
+
+```bash
+sbatch [-c CPUS] [--gres=gpu:1] scripts/slurm/run.sbatch BACKEND [SIZE] [LAYERS] [THREADS] [CSV]
+```
+
+| Argument | Default |
+| -------- | ------- |
+| `BACKEND` | required: `serial`, `openmp` or `cuda` |
+| `SIZE` | `1024` |
+| `LAYERS` | `120` |
+| `THREADS` | the CPUs allocated with `-c` (must not exceed them) |
+| `CSV` | `results/euler.csv` |
+
+```bash
+sbatch              scripts/slurm/run.sbatch serial 1024 120
+sbatch -c 16        scripts/slurm/run.sbatch openmp 1024 120 16
+sbatch --gres=gpu:1 scripts/slurm/run.sbatch cuda   1024 120
+```
+
+Each job appends one row to the CSV (with a header if the file is new) and
+writes its log to `sdnn-run-<jobid>.out`. The job fails if the result does not
+match the truth. For OpenMP runs, set `OMP_SCHEDULE` (e.g. `dynamic,64`) before
+`sbatch`. The CSV does not record it, but the job log does.
+
+### CPU benchmark and schedule sweep
+
+```bash
+sbatch scripts/slurm/bench.sbatch
+```
+
+Runs the unit tests for the CPU backends, checks `serial` and `openmp` against
+the truth, then sweeps OpenMP schedules and thread counts. Results go to
+`results/<jobid>/sweep.csv` and `summary.txt`. Override with `SIZE`, `DEPTHS`,
+`THREADS`, `SCHEDULES` and `REPS` exported before `sbatch`; see the header of
+`scripts/slurm/bench.sbatch`.
+
+> [!WARNING]
+> `cuda-euler` uses `-march=native`, so CPU code is tuned for the node that
+> compiled it. The build job records that node's CPU model in
+> `build/cuda-euler/build-cpu.txt`, and `run.sbatch` and `bench.sbatch` warn
+> when they land on a different one. If they do, check whether the partition
+> mixes CPU types (`sinfo -N -o "%N %P %c"`, `scontrol show node <name>`) and
+> pin the build and runs to one type with `--constraint` or `--nodelist`.
 
 ## Adding Backends
 

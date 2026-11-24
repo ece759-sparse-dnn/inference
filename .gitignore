@@ -8,3 +8,8 @@ __pycache__/
 .envrc
 CMakeUserPresets.json
 compile_commands.json
+
+# Slurm outputs
+results/
+sdnn-run-*.out
+sdnn-bench-*.out
