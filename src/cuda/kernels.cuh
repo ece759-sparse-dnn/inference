@@ -1,17 +1,19 @@
-/**
- * Kernel declarations, defined in kernels.cu and launched from cuda.cu.
- *
- * Launching a __global__ across translation units is fine without separable
- * compilation. __device__ helpers called from more than one .cu file must be
- * inline in a header (or the target needs CUDA_SEPARABLE_COMPILATION).
- */
-
 #pragma once
 
 #include "device_views.cuh"
 
+#include <cuda/std/span>
+
+#include <cstdint>
+
 namespace sdnn::cuda {
 
-// TODO: ell_relu_kernel, active-image reduction
+__global__ auto ell_relu_kernel(float ymax, float bias, EllView layer,
+                                ActivationsView yin, ActivationsRef yout)
+    -> void;
+
+__global__ auto active_images_kernel(ActivationsView y,
+                                     ::cuda::std::span<std::int32_t> active)
+    -> void;
 
 } // namespace sdnn::cuda
