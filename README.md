@@ -103,7 +103,8 @@ ctest --preset <preset>    # debug, asan, release only
 
 ```bash
 ./build/<preset>/apps/sdnn_run \
-  [--backend NAME] [--size N] [--layers L] [--data-dir DIR] [--csv FILE]
+  [--backend NAME] [--size N] [--layers L] [--data-dir DIR] [--csv FILE] \
+  [--compact-after K]
 ```
 
 | Option | Default |
@@ -113,6 +114,7 @@ ctest --preset <preset>    # debug, asan, release only
 | `--layers` | `120` |
 | `--data-dir` | `$SDNN_DATA_DIR`, else `inference/data` |
 | `--csv` | none |
+| `--compact-after` | disabled (CUDA only) |
 
 The program loads `<data>/bin/neuron<size>`, benchmarks the backend's
 inference, and checks the active rows against the truth categories. One CSV
@@ -123,6 +125,18 @@ backend,neurons,layers,images,threads,seconds,edges_per_second,pass
 ```
 
 `OMP_NUM_THREADS` should be set for OpenMP runs.
+
+### CUDA active row compaction
+
+`--compact-after K` packs the active images after layer K (1 ≤ K < L).
+Subsequent layers run on the packed rows, and the backend returns the original
+image IDs. Timing includes detection, packing and ID recovery. Both activation
+buffers still have their original capacity.
+
+```bash
+./build/cuda-euler/apps/sdnn_run --backend cuda --size 1024 --layers 120
+./build/cuda-euler/apps/sdnn_run --backend cuda --size 1024 --layers 120 --compact-after 8
+```
 
 ## Adding Backends
 
