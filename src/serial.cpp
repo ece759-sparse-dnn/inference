@@ -37,7 +37,8 @@ void apply_activations(const std::vector<float>& left_layer,
 }
 }
 
-std::vector<std::int32_t> infer_serial(const Dataset &d, int layers) {
+std::vector<std::int32_t> infer_serial(const Dataset &d, int layers,
+                                       const InferOptions &) {
 	std::vector<std::int32_t> active_image_idxs;
 
 	for(std::size_t image = 0; image < d.images.rows; ++image){

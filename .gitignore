@@ -13,3 +13,5 @@ compile_commands.json
 results/
 sdnn-run-*.out
 sdnn-bench-*.out
+sdnn-build-*.out
+sdnn-test-*.out

@@ -100,14 +100,16 @@ ctest --preset <preset>    # debug, asan, release only
 
 ## CUDA active row compaction
 
-`--compact-after K` packs the active images after layer K (1 ≤ K < L).
+Setting `cuda.compact_after=K` packs the active images after layer K (1 ≤ K < L);
+the `cuda_compact8` preset uses K = 8.
 Subsequent layers run on the packed rows, and the backend returns the original
 image IDs. Timing includes detection, packing and ID recovery. Both activation
 buffers still have their original capacity.
 
 ```bash
 ./build/cuda-euler/apps/sdnn_run --backend cuda --size 1024 --layers 120
-./build/cuda-euler/apps/sdnn_run --backend cuda --size 1024 --layers 120 --compact-after 8
+./build/cuda-euler/apps/sdnn_run --backend cuda_compact8 --size 1024 --layers 120
+./build/cuda-euler/apps/sdnn_run --backend cuda --set cuda.compact_after=7
 ```
 
 To repeat the layer sweep, run the following inside a single GPU allocation
@@ -127,7 +129,7 @@ order. In Euler job 128922 on one RTX 4000 SFF Ada, confirmation medians were
 ```bash
 ./build/<preset>/apps/sdnn_run \
   [--backend NAME] [--size N] [--layers L] [--data-dir DIR] [--csv FILE] \
-  [--compact-after K]
+  [--set KEY=VALUE]...
 ```
 
 | Option | Default |
@@ -137,7 +139,18 @@ order. In Euler job 128922 on one RTX 4000 SFF Ada, confirmation medians were
 | `--layers` | `120` |
 | `--data-dir` | `$SDNN_DATA_DIR`, else `inference/data` |
 | `--csv` | none |
-| `--compact-after` | disabled (CUDA only) |
+| `--set` | the backend preset's options |
+
+`--backend` takes a backend or one of its presets (`sdnn_run` with no
+arguments lists them). `--set` overrides one option of that preset and may be
+repeated; the CSV `backend` column then reads e.g. `cuda+cuda.compact_after=7`.
+Keys are prefixed by the backend they belong to, and a key for another backend
+is an error (e.g. `cuda.*` with the default `serial` backend), so the CSV never
+labels a run with an option it ignored.
+
+| Key | Backends | Meaning |
+| --- | -------- | ------- |
+| `cuda.compact_after` | `cuda*` | compact active rows after layer K; 0 disables |
 
 The program loads `<data>/bin/neuron<size>`, benchmarks the backend's
 inference, and checks the active rows against the truth categories. One CSV
@@ -226,6 +239,18 @@ writes its log to `sdnn-run-<jobid>.out`. The job fails if the result does not
 match the truth. For OpenMP runs, set `OMP_SCHEDULE` (e.g. `dynamic,64`) before
 `sbatch`. The CSV does not record it, but the job log does.
 
+### Unit tests on a GPU
+
+```bash
+sbatch --dependency=afterok:<build jobid> scripts/slurm/test.sbatch
+```
+
+Runs the whole `sdnn_tests` suite, CUDA included, on a GPU node. Every backend
+preset (`cuda`, `cuda_compact8`, ...) is checked against the truth data, so
+adding a preset is enough to test a new optimization. The job fails if any test
+fails, and its log goes to `sdnn-test-<jobid>.out`. Narrow it with
+`GTEST_FILTER` exported before `sbatch`, e.g. `GTEST_FILTER='*cuda*:*Cuda*'`.
+
 ### CPU benchmark and schedule sweep
 
 ```bash
@@ -251,7 +276,8 @@ the truth, then sweeps OpenMP schedules and thread counts. Results go to
 A backend is a function with signature
 
 ```cpp
-std::vector<std::int32_t> fn(const sdnn::Dataset &dataset, int layers);
+std::vector<std::int32_t> fn(const sdnn::Dataset &dataset, int layers,
+                             const sdnn::InferOptions &options);
 ```
 
 that runs `layers` layers over `dataset.images` and returns the sorted,
@@ -264,3 +290,20 @@ To add it to the project,
 1. Declare it in `include/sdnn/backend.hpp`.
 2. Register it in `backends()` in `src/backends.cpp`.
 3. Add its source to `src/CMakeLists.txt`.
+
+## Adding an optimization
+
+Optimizations are options of an existing backend, not new backends, so they
+share its code, tests and benchmark path.
+
+1. Add a field to the backend's options struct (e.g. `CudaOptions`) in
+   `include/sdnn/backend.hpp`, defaulting to the unoptimized behavior.
+2. Give it a key in `set_option` in `src/backends.cpp`, prefixed with the
+   backend's `option_group` (e.g. `cuda.`), so `--set` and sweeps can reach
+   it.
+3. Optionally add a named preset to `backends()`. Every preset is checked
+   against the truth data by `BackendTest`.
+4. Branch on the option in host code. If it changes what a kernel does, make
+   the variant a template parameter of the kernel in `src/cuda/kernels.cu` and
+   pick the instantiation on the host, so inner loops carry no runtime
+   branches.

@@ -3,7 +3,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "sdnn/backend.hpp"
 
@@ -41,7 +43,7 @@ TEST_P(BackendTest, MatchesTruth) {
   const auto &truth = dataset->categories.at(120);
 
   try {
-    auto result = backend.infer(*dataset, 120);
+    auto result = backend.infer(*dataset, 120, backend.preset);
     ASSERT_EQ(result.size(), truth.size());
     EXPECT_EQ(result, truth);
   } catch (const sdnn::not_implemented &e) {
@@ -63,13 +65,73 @@ TEST(CudaCompaction, PreservesOriginalIdsAsRowsDie) {
     w.indices.push_back(0);
     w.values.push_back(1);
   }
+  const auto compact = [&d](int layers, int after) {
+    return sdnn::infer_cuda(d, layers, {.cuda = {.compact_after = after}});
+  };
   const std::vector<std::int32_t> both{1, 4}, last{4};
-  EXPECT_EQ(sdnn::infer_cuda_compact(d, 10, 8), both);
-  EXPECT_EQ(sdnn::infer_cuda_compact(d, 11, 10), last);
-  EXPECT_TRUE(sdnn::infer_cuda_compact(d, 13, 8).empty());
+  EXPECT_EQ(compact(10, 8), both);
+  EXPECT_EQ(compact(11, 10), last);
+  EXPECT_TRUE(compact(13, 8).empty());
 
   d.images = {2, 1, {0, 1, 2}, {0, 0}, {9, 11}};
-  EXPECT_EQ(sdnn::infer_cuda_compact(d, 10, 8), (std::vector<std::int32_t>{1}));
-  EXPECT_TRUE(sdnn::infer_cuda_compact(d, 13, 12).empty());
+  EXPECT_EQ(compact(10, 8), (std::vector<std::int32_t>{1}));
+  EXPECT_TRUE(compact(13, 12).empty());
+
+  EXPECT_THROW(compact(10, 10), std::invalid_argument);
 }
 #endif
+
+namespace {
+
+constexpr sdnn::Backend kGpuLike{"gpu_like", nullptr, "cuda"};
+constexpr sdnn::Backend kNoOptions{"no_options", nullptr};
+
+} // namespace
+
+TEST(SetOption, ParsesInteger) {
+  sdnn::InferOptions options;
+  sdnn::set_option(kGpuLike, options, "cuda.compact_after", "7");
+  EXPECT_EQ(options.cuda.compact_after, 7);
+}
+
+TEST(SetOption, UnknownKeyThrows) {
+  sdnn::InferOptions options;
+  EXPECT_THROW(sdnn::set_option(kGpuLike, options, "cuda.nope", "1"),
+               std::invalid_argument);
+}
+
+TEST(SetOption, MalformedValueThrows) {
+  sdnn::InferOptions options;
+  EXPECT_THROW(sdnn::set_option(kGpuLike, options, "cuda.compact_after", "8x"),
+               std::invalid_argument);
+  EXPECT_THROW(sdnn::set_option(kGpuLike, options, "cuda.compact_after", ""),
+               std::invalid_argument);
+}
+
+TEST(SetOption, OtherBackendsOptionsThrow) {
+  sdnn::InferOptions options;
+  EXPECT_THROW(sdnn::set_option(kNoOptions, options, "cuda.compact_after", "8"),
+               std::invalid_argument);
+  EXPECT_EQ(options.cuda.compact_after, 0);
+}
+
+TEST(SetOption, RegisteredCpuBackendsRejectGpuOptions) {
+  for (const auto &backend : sdnn::backends()) {
+    if (backend.option_group.empty()) {
+      sdnn::InferOptions options;
+      EXPECT_THROW(
+          sdnn::set_option(backend, options, "cuda.compact_after", "8"),
+          std::invalid_argument)
+          << backend.name;
+    }
+  }
+}
+
+TEST(Backends, PresetNamesAreUnique) {
+  const auto all = sdnn::backends();
+  for (std::size_t i = 0; i < all.size(); ++i) {
+    for (std::size_t j = i + 1; j < all.size(); ++j) {
+      EXPECT_NE(all[i].name, all[j].name);
+    }
+  }
+}

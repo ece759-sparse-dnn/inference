@@ -40,7 +40,8 @@ bool apply_activations(const std::vector<float>& left_layer,
 }
 }
 
-std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
+std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers,
+                                       const InferOptions &) {
 	std::vector<std::int32_t> is_image_active(d.images.rows, 0);
 	std::vector<std::int32_t> active_image_idxs;
 	#pragma omp parallel

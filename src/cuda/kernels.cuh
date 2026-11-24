@@ -16,4 +16,8 @@ __global__ auto active_images_kernel(ActivationsView y,
                                      ::cuda::std::span<std::int32_t> active)
     -> void;
 
+__global__ auto gather_rows_kernel(ActivationsView src,
+                                   ::cuda::std::span<const std::int32_t> ids,
+                                   ActivationsRef dst) -> void;
+
 } // namespace sdnn::cuda
