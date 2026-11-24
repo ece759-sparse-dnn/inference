@@ -14,8 +14,8 @@ TEST(Dataset, Load1024) {
   }
 
   const sdnn::Dataset d = sdnn::load_dataset(dir);
-  EXPECT_EQ(d.neurons, 1024);
+  EXPECT_EQ(d.layers.neurons, 1024);
   EXPECT_EQ(d.images.indptr.size(), static_cast<std::size_t>(d.images.rows) + 1);
-  EXPECT_EQ(d.layer_indptr(d.num_layers - 1).back(), d.nnz_per_layer);
+  EXPECT_EQ(d.layers.layer_indptr(d.layers.num_layers - 1).back(), d.layers.nnz_per_layer);
   EXPECT_TRUE(d.categories.contains(120));
 }

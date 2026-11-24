@@ -1,10 +1,8 @@
-#include <stdexcept>
-
 #include "sdnn/backend.hpp"
 
 namespace sdnn {
 
-std::vector<std::int32_t> infer_cuda(const Dataset &, int) {
+std::vector<std::int32_t> infer_cuda(const Dataset &d, int layers) {
   throw sdnn::not_implemented("cuda backend not implemented");
 }
 

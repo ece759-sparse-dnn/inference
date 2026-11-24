@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     const sdnn::Dataset dataset = sdnn::load_dataset(dir);
 
     const auto truth = dataset.categories.find(opts.layers);
-    if (truth == dataset.categories.end() || opts.layers > dataset.num_layers) {
+    if (truth == dataset.categories.end() || opts.layers > dataset.layers.num_layers) {
       throw std::runtime_error("no truth categories for " +
                                std::to_string(opts.layers) + " layers");
     }
@@ -97,10 +97,10 @@ int main(int argc, char **argv) {
 
     const bool pass = rows == truth->second;
     const double edges = static_cast<double>(dataset.images.rows) *
-                         dataset.nnz_per_layer * opts.layers;
+                         dataset.layers.nnz_per_layer * opts.layers;
 
     std::ostringstream row;
-    row << backend->name << ',' << dataset.neurons << ',' << opts.layers << ','
+    row << backend->name << ',' << dataset.layers.neurons << ',' << opts.layers << ','
         << dataset.images.rows << ',' << omp_get_max_threads() << ','
         << elapsed.count() << ',' << edges / elapsed.count() << ','
         << (pass ? "true" : "false");

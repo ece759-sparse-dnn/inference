@@ -60,23 +60,26 @@ Dataset load_dataset(const std::filesystem::path &dir) {
   }
 
   Dataset d;
-  d.neurons = static_cast<std::int32_t>(meta_number(meta, "neurons"));
-  d.num_layers = static_cast<std::int32_t>(meta_number(meta, "layers"));
-  d.nnz_per_layer = static_cast<std::int32_t>(meta_number(meta, "nnz_per_layer"));
   d.bias = static_cast<float>(meta_number(meta, "bias"));
   d.ymax = static_cast<float>(meta_number(meta, "ymax"));
 
-  const std::size_t layers = d.num_layers;
-  const std::size_t neurons = d.neurons;
-  const std::size_t nnz = d.nnz_per_layer;
-  d.weights_indptr =
-      load_shaped<std::int32_t>(dir / "weights_indptr.npy", {layers, neurons + 1});
-  d.weights_indices =
+  CsrLayers &w = d.layers;
+  w.neurons = static_cast<std::int32_t>(meta_number(meta, "neurons"));
+  w.num_layers = static_cast<std::int32_t>(meta_number(meta, "layers"));
+  w.nnz_per_layer =
+      static_cast<std::int32_t>(meta_number(meta, "nnz_per_layer"));
+
+  const std::size_t layers = w.num_layers;
+  const std::size_t neurons = w.neurons;
+  const std::size_t nnz = w.nnz_per_layer;
+  w.indptr = load_shaped<std::int32_t>(dir / "weights_indptr.npy",
+                                       {layers, neurons + 1});
+  w.indices =
       load_shaped<std::int32_t>(dir / "weights_indices.npy", {layers, nnz});
-  d.weights_values = load_shaped<float>(dir / "weights_values.npy", {layers, nnz});
+  w.values = load_shaped<float>(dir / "weights_values.npy", {layers, nnz});
 
   d.images.rows = static_cast<std::int32_t>(meta_number(meta, "images"));
-  d.images.cols = d.neurons;
+  d.images.cols = w.neurons;
   d.images.indptr = load_shaped<std::int32_t>(
       dir / "images_indptr.npy", {static_cast<std::size_t>(d.images.rows) + 1});
   const std::size_t image_nnz = d.images.indptr.back();
