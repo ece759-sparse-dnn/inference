@@ -13,13 +13,13 @@ bool apply_activations(const std::vector<float>& left_layer,
 
 	std::fill(right_layer.begin(), right_layer.end(), 0.0f);
 
-	std::span<const std::int32_t> indptr  = d.layer_indptr(left_layer_num);
-	std::span<const std::int32_t> indices = d.layer_indices(left_layer_num);
-	std::span<const float>        values  = d.layer_values(left_layer_num);
+	std::span<const std::int32_t> indptr  = d.layers.layer_indptr(left_layer_num);
+	std::span<const std::int32_t> indices = d.layers.layer_indices(left_layer_num);
+	std::span<const float>        values  = d.layers.layer_values(left_layer_num);
 
 	// For every neuron in left layer, this adds it's contribution (edge_weight * neuron_value) 
 	// to each neuron it is connected to in the right layer
-	for(std::int32_t i = 0; i < d.neurons; ++i){
+	for(std::int32_t i = 0; i < d.layers.neurons; ++i){
 		if(left_layer[i] == 0.0f){
 			continue;
 		}		
@@ -31,7 +31,7 @@ bool apply_activations(const std::vector<float>& left_layer,
 	}
 
 	bool alive = false;
-	for(std::int32_t i = 0; i < d.neurons; ++i){
+	for(std::int32_t i = 0; i < d.layers.neurons; ++i){
 		if(right_layer[i] > 0) right_layer[i] += d.bias;
 		right_layer[i] = std::min(std::max(0.0f, right_layer[i]), d.ymax);
 		alive |= (right_layer[i] > 0.0f);
@@ -47,8 +47,8 @@ std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 	{
 	
 		// Per thread activation buffers. Reused by each image allocated to that thread
-		std::vector<float> left_layer(d.neurons, 0.0f);
-		std::vector<float> right_layer(d.neurons, 0.0f);
+		std::vector<float> left_layer(d.layers.neurons, 0.0f);
+		std::vector<float> right_layer(d.layers.neurons, 0.0f);
 
 		#pragma omp for schedule(runtime)
 		for(std::size_t image = 0; image < d.images.rows; ++image){
@@ -68,7 +68,7 @@ std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 			}
 
 			bool nonzero = false;
-			for(std::int32_t i = 0; i < d.neurons; ++i){
+			for(std::int32_t i = 0; i < d.layers.neurons; ++i){
 				if(left_layer[i] != 0.0f){
 					nonzero = true;
 					break;
