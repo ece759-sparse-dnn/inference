@@ -50,7 +50,7 @@ std::vector<std::int32_t> infer_openmp(const Dataset &d, int layers) {
 		std::vector<float> left_layer(d.neurons, 0.0f);
 		std::vector<float> right_layer(d.neurons, 0.0f);
 
-		#pragma omp for
+		#pragma omp for schedule(runtime)
 		for(std::size_t image = 0; image < d.images.rows; ++image){
 			std::int32_t image_start = d.images.indptr[image];
 			std::int32_t image_end = d.images.indptr[image + 1];
