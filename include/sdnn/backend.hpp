@@ -29,6 +29,9 @@ std::vector<std::int32_t> infer_serial(const Dataset &dataset, int layers);
 std::vector<std::int32_t> infer_openmp(const Dataset &dataset, int layers);
 #ifdef CUDA_ENABLED
 std::vector<std::int32_t> infer_cuda(const Dataset &dataset, int layers);
+// Zero disables compaction. A positive value packs active rows after that layer.
+std::vector<std::int32_t> infer_cuda_compact(const Dataset &dataset, int layers,
+                                             int after_layer);
 #endif
 
 std::span<const Backend> backends();

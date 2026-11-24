@@ -98,11 +98,36 @@ ctest --preset <preset>    # debug, asan, release only
 > [!WARNING]
 > `-march=native` targets the CPU the build itself runs on.
 
+## CUDA active row compaction
+
+`--compact-after K` packs the active images after layer K (1 ≤ K < L).
+Subsequent layers run on the packed rows, and the backend returns the original
+image IDs. Timing includes detection, packing and ID recovery. Both activation
+buffers still have their original capacity.
+
+```bash
+./build/cuda-euler/apps/sdnn_run --backend cuda --size 1024 --layers 120
+./build/cuda-euler/apps/sdnn_run --backend cuda --size 1024 --layers 120 --compact-after 8
+```
+
+To repeat the layer sweep, run the following inside a single GPU allocation
+with `SDNN_DATA_DIR` pointing to the converted official data.
+
+```bash
+python3 scripts/sweep_compaction.py ./build/cuda-euler/apps/sdnn_run timings.csv
+```
+
+The sweep measures every candidate in three shuffled rounds. It retests the
+fastest five alongside layers 8 and 10 and the uncompressed baseline in balanced
+order. In Euler job 128922 on one RTX 4000 SFF Ada, confirmation medians were
+324.0 ms at layer 7, 324.4 ms at layer 8 and 1,440.9 ms without compaction.
+
 ## Running
 
 ```bash
 ./build/<preset>/apps/sdnn_run \
-  [--backend NAME] [--size N] [--layers L] [--data-dir DIR] [--csv FILE]
+  [--backend NAME] [--size N] [--layers L] [--data-dir DIR] [--csv FILE] \
+  [--compact-after K]
 ```
 
 | Option | Default |
@@ -112,6 +137,7 @@ ctest --preset <preset>    # debug, asan, release only
 | `--layers` | `120` |
 | `--data-dir` | `$SDNN_DATA_DIR`, else `inference/data` |
 | `--csv` | none |
+| `--compact-after` | disabled (CUDA only) |
 
 The program loads `<data>/bin/neuron<size>`, benchmarks the backend's
 inference, and checks the active rows against the truth categories. One CSV
