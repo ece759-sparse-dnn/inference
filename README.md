@@ -124,6 +124,78 @@ backend,neurons,layers,images,threads,seconds,edges_per_second,pass
 
 `OMP_NUM_THREADS` should be set for OpenMP runs.
 
+## Running on Euler (Slurm)
+
+Timed or heavy runs go through Slurm; the login node is for editing, building
+and short tests only. All scripts live in `scripts/slurm/` and are run from the
+repo root.
+
+### One-time setup
+
+Point `SDNN_DATA_DIR` at the team's shared, already-converted dataset so nobody
+needs their own copy (add it to your `~/.bashrc`):
+
+```bash
+export SDNN_DATA_DIR=/path/to/shared/sdnn-data    # must contain bin/neuron<size>/
+```
+
+`sbatch` passes your environment through, so jobs see it too.
+
+### Build
+
+On the login node (configuring downloads GoogleTest):
+
+```bash
+scripts/slurm/build.sh
+```
+
+This loads the modules from [Slurm Module Setup](#slurm-module-setup) and builds
+the `cuda-euler` preset into `build/cuda-euler/`.
+
+### Run one backend
+
+```bash
+sbatch [-c CPUS] [--gres=gpu:1] scripts/slurm/run.sbatch BACKEND [SIZE] [LAYERS] [THREADS] [CSV]
+```
+
+| Argument | Default |
+| -------- | ------- |
+| `BACKEND` | required: `serial`, `openmp` or `cuda` |
+| `SIZE` | `1024` |
+| `LAYERS` | `120` |
+| `THREADS` | the CPUs allocated with `-c` (must not exceed them) |
+| `CSV` | `results/euler.csv` |
+
+```bash
+sbatch              scripts/slurm/run.sbatch serial 1024 120
+sbatch -c 16        scripts/slurm/run.sbatch openmp 1024 120 16
+sbatch --gres=gpu:1 scripts/slurm/run.sbatch cuda   1024 120
+```
+
+Each job appends one row to the CSV (with a header if the file is new) and
+writes its log to `sdnn-run-<jobid>.out`. The job fails if the result does not
+match the truth. For OpenMP runs, set `OMP_SCHEDULE` (e.g. `dynamic,64`) before
+`sbatch`. The CSV does not record it, but the job log does.
+
+Check on jobs with `squeue -u $USER`.
+
+### CPU benchmark and schedule sweep
+
+```bash
+sbatch scripts/slurm/bench.sbatch
+```
+
+Runs the unit tests for the CPU backends, checks `serial` and `openmp` against
+the truth, then sweeps OpenMP schedules and thread counts. Results go to
+`results/<jobid>/sweep.csv` and `summary.txt`. Override with `SIZE`, `DEPTHS`,
+`THREADS`, `SCHEDULES` and `REPS` exported before `sbatch`; see the header of
+`scripts/slurm/bench.sbatch`.
+
+> [!WARNING]
+> `cuda-euler` uses `-march=native`, so CPU code is tuned for the machine that
+> runs `build.sh`. If the login and compute nodes have different CPUs, CPU
+> timings may be off, and newer instructions may even crash on older nodes.
+
 ## Adding Backends
 
 A backend is a function with signature
