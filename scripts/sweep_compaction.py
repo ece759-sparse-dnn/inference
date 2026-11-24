@@ -25,10 +25,10 @@ def main():
         def measure(phase, repeat, order):
             nonlocal writer
             for position, layer in enumerate(order, 1):
-                flags = ["--compact-after", str(layer)] if layer else []
+                flags = ["--set", f"cuda.compact_after={layer}"] if layer else []
                 stdout = subprocess.check_output(command + flags, env=env, text=True)
                 (row,) = csv.DictReader(stdout.splitlines())
-                backend = f"cuda_compact{layer}" if layer else "cuda"
+                backend = f"cuda+cuda.compact_after={layer}" if layer else "cuda"
                 observed = tuple(row[key] for key in
                                  ("backend", "neurons", "layers", "images", "threads", "pass"))
                 if observed != (backend, "1024", "120", "60000", "1", "true"):

@@ -47,8 +47,6 @@ __global__ void gather_rows(cuda::ActivationsView src, const std::int32_t *ids,
   }
 }
 
-} // namespace
-
 std::vector<std::int32_t> infer_cuda_compact(const Dataset &d, int layers,
                                              int after_layer) {
   if (after_layer < 0 || (after_layer > 0 && after_layer >= layers)) {
@@ -115,8 +113,11 @@ std::vector<std::int32_t> infer_cuda_compact(const Dataset &d, int layers,
   return result;
 }
 
-std::vector<std::int32_t> infer_cuda(const Dataset &d, int layers) {
-  return infer_cuda_compact(d, layers, 0);
+} // namespace
+
+std::vector<std::int32_t> infer_cuda(const Dataset &d, int layers,
+                                     const InferOptions &options) {
+  return infer_cuda_compact(d, layers, options.cuda.compact_after);
 }
 
 } // namespace sdnn
