@@ -34,6 +34,9 @@ using InferFn = std::vector<std::int32_t> (*)(const Dataset &, int,
 struct Backend {
   std::string_view name;
   InferFn infer;
+  // Prefix of the option keys this backend reads, e.g. "cuda" for
+  // "cuda.compact_after". Empty if it takes no options.
+  std::string_view option_group{};
   InferOptions preset{};
 };
 
@@ -49,8 +52,9 @@ std::vector<std::int32_t> infer_cuda(const Dataset &dataset, int layers,
 std::span<const Backend> backends();
 
 // Sets the option named by a dotted key, e.g. "cuda.compact_after". Throws
-// std::invalid_argument for an unknown key or a malformed value.
-void set_option(InferOptions &options, std::string_view key,
-                std::string_view value);
+// std::invalid_argument for an unknown key, a key outside the backend's
+// option_group, or a malformed value.
+void set_option(const Backend &backend, InferOptions &options,
+                std::string_view key, std::string_view value);
 
 } // namespace sdnn

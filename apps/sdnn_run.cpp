@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
   std::string label(backend->name);
   for (const auto &[key, value] : opts.overrides) {
     try {
-      sdnn::set_option(options, key, value);
+      sdnn::set_option(*backend, options, key, value);
     } catch (const std::invalid_argument &e) {
       std::cerr << "error: " << e.what() << '\n';
       usage(argv[0]);

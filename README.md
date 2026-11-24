@@ -144,10 +144,13 @@ order. In Euler job 128922 on one RTX 4000 SFF Ada, confirmation medians were
 `--backend` takes a backend or one of its presets (`sdnn_run` with no
 arguments lists them). `--set` overrides one option of that preset and may be
 repeated; the CSV `backend` column then reads e.g. `cuda+cuda.compact_after=7`.
+Keys are prefixed by the backend they belong to, and a key for another backend
+is an error (e.g. `cuda.*` with the default `serial` backend), so the CSV never
+labels a run with an option it ignored.
 
-| Key | Meaning |
-| --- | ------- |
-| `cuda.compact_after` | compact active rows after layer K; 0 disables |
+| Key | Backends | Meaning |
+| --- | -------- | ------- |
+| `cuda.compact_after` | `cuda*` | compact active rows after layer K; 0 disables |
 
 The program loads `<data>/bin/neuron<size>`, benchmarks the backend's
 inference, and checks the active rows against the truth categories. One CSV
@@ -295,8 +298,9 @@ share its code, tests and benchmark path.
 
 1. Add a field to the backend's options struct (e.g. `CudaOptions`) in
    `include/sdnn/backend.hpp`, defaulting to the unoptimized behavior.
-2. Give it a key in `set_option` in `src/backends.cpp`, so `--set` and sweeps
-   can reach it.
+2. Give it a key in `set_option` in `src/backends.cpp`, prefixed with the
+   backend's `option_group` (e.g. `cuda.`), so `--set` and sweeps can reach
+   it.
 3. Optionally add a named preset to `backends()`. Every preset is checked
    against the truth data by `BackendTest`.
 4. Branch on the option in host code. If it changes what a kernel does, make

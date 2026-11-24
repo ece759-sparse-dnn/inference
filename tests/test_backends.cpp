@@ -81,24 +81,50 @@ TEST(CudaCompaction, PreservesOriginalIdsAsRowsDie) {
 }
 #endif
 
+namespace {
+
+constexpr sdnn::Backend kGpuLike{"gpu_like", nullptr, "cuda"};
+constexpr sdnn::Backend kNoOptions{"no_options", nullptr};
+
+} // namespace
+
 TEST(SetOption, ParsesInteger) {
   sdnn::InferOptions options;
-  sdnn::set_option(options, "cuda.compact_after", "7");
+  sdnn::set_option(kGpuLike, options, "cuda.compact_after", "7");
   EXPECT_EQ(options.cuda.compact_after, 7);
 }
 
 TEST(SetOption, UnknownKeyThrows) {
   sdnn::InferOptions options;
-  EXPECT_THROW(sdnn::set_option(options, "cuda.nope", "1"),
+  EXPECT_THROW(sdnn::set_option(kGpuLike, options, "cuda.nope", "1"),
                std::invalid_argument);
 }
 
 TEST(SetOption, MalformedValueThrows) {
   sdnn::InferOptions options;
-  EXPECT_THROW(sdnn::set_option(options, "cuda.compact_after", "8x"),
+  EXPECT_THROW(sdnn::set_option(kGpuLike, options, "cuda.compact_after", "8x"),
                std::invalid_argument);
-  EXPECT_THROW(sdnn::set_option(options, "cuda.compact_after", ""),
+  EXPECT_THROW(sdnn::set_option(kGpuLike, options, "cuda.compact_after", ""),
                std::invalid_argument);
+}
+
+TEST(SetOption, OtherBackendsOptionsThrow) {
+  sdnn::InferOptions options;
+  EXPECT_THROW(sdnn::set_option(kNoOptions, options, "cuda.compact_after", "8"),
+               std::invalid_argument);
+  EXPECT_EQ(options.cuda.compact_after, 0);
+}
+
+TEST(SetOption, RegisteredCpuBackendsRejectGpuOptions) {
+  for (const auto &backend : sdnn::backends()) {
+    if (backend.option_group.empty()) {
+      sdnn::InferOptions options;
+      EXPECT_THROW(
+          sdnn::set_option(backend, options, "cuda.compact_after", "8"),
+          std::invalid_argument)
+          << backend.name;
+    }
+  }
 }
 
 TEST(Backends, PresetNamesAreUnique) {
