@@ -68,7 +68,7 @@ echo "results: $results"
 
 section "unit tests (CPU backends only; this job has no GPU)"
 export OMP_NUM_THREADS=$cpus
-"$tests" --gtest_filter='-*cuda*'
+"$tests" --gtest_filter='-*cuda*:*Cuda*'
 
 section "correctness (sdnn_run vs truth)"
 for depth in $depths; do

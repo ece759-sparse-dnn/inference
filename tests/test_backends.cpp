@@ -81,7 +81,7 @@ TEST(CudaCompaction, PreservesOriginalIdsAsRowsDie) {
 }
 #endif
 
-TEST(SetOption, CudaCompactAfter) {
+TEST(SetOption, ParsesInteger) {
   sdnn::InferOptions options;
   sdnn::set_option(options, "cuda.compact_after", "7");
   EXPECT_EQ(options.cuda.compact_after, 7);

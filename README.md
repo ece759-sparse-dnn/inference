@@ -236,6 +236,18 @@ writes its log to `sdnn-run-<jobid>.out`. The job fails if the result does not
 match the truth. For OpenMP runs, set `OMP_SCHEDULE` (e.g. `dynamic,64`) before
 `sbatch`. The CSV does not record it, but the job log does.
 
+### Unit tests on a GPU
+
+```bash
+sbatch --dependency=afterok:<build jobid> scripts/slurm/test.sbatch
+```
+
+Runs the whole `sdnn_tests` suite, CUDA included, on a GPU node. Every backend
+preset (`cuda`, `cuda_compact8`, ...) is checked against the truth data, so
+adding a preset is enough to test a new optimization. The job fails if any test
+fails, and its log goes to `sdnn-test-<jobid>.out`. Narrow it with
+`GTEST_FILTER` exported before `sbatch`, e.g. `GTEST_FILTER='*cuda*:*Cuda*'`.
+
 ### CPU benchmark and schedule sweep
 
 ```bash
