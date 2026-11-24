@@ -8,6 +8,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(sdnn_tests
   test_dataset.cpp
+  test_dense.cpp
   test_version.cpp
   test_backends.cpp
   test_ell.cpp
