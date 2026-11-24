@@ -12,9 +12,9 @@ inference, with benchmarks.
 | Python reference inference (`sdnn-tools verify`) | working |
 | C++ dataset loader (`sdnn::load_dataset`) | working |
 | Benchmark driver (`sdnn_run`) | working |
-| Serial backend | not implemented |
-| OpenMP backend | not implemented |
-| CUDA backend | not implemented |
+| Serial backend | working |
+| OpenMP backend | working |
+| CUDA backend | working |
 
 ## Dependencies
 
