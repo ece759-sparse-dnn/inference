@@ -12,6 +12,7 @@ add_executable(sdnn_tests
   test_version.cpp
   test_backends.cpp
   test_ell.cpp
+  test_synthetic.cpp
 )
 target_link_libraries(sdnn_tests PRIVATE sdnn GTest::gtest_main)
 target_compile_definitions(sdnn_tests PRIVATE
